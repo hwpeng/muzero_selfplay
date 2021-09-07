@@ -121,8 +121,8 @@ class Game():
         targets.append((0, last_reward, []))
     return targets
 
-  def to_play(self) -> Player:
-    return Player()
+  def to_play(self):
+    return self.environment.to_play()
 
   def action_history(self) -> ActionHistory:
     return ActionHistory(self.history, self.action_space_size)

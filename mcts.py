@@ -47,8 +47,9 @@ class Node():
 
 def run_mcts(config, root, action_history, network):
   min_max_stats = MinMaxStats(config.known_bounds)
+  to_play = root.to_play
 
-  for _ in range(config.num_simulations):
+  for _ in range(config.num_simulations-root.visit_count):
     history = action_history.clone()
     node = root
     search_path = [node]
@@ -57,6 +58,10 @@ def run_mcts(config, root, action_history, network):
       action, node = select_child(config, node, min_max_stats)
       history.add_action(action)
       search_path.append(node)
+      if to_play == 1:
+        to_play = 0
+      else:
+        to_play = 1
 
     # Inside the search tree we use the dynamics function to obtain the next hidden state given an action and the previous hidden state.
     parent = search_path[-2]
@@ -72,9 +77,9 @@ def run_mcts(config, root, action_history, network):
         policy_logits,
         hidden_state)
 
-    node.expand_node(history.to_play(), history.action_space(), network_output)
+    node.expand_node(to_play, history.action_space(), network_output)
 
-    backpropagate(search_path, network_output.value, history.to_play(),
+    backpropagate(search_path, network_output.value, to_play,
                   config.discount, min_max_stats)
 
 def softmax_sample(visit_counts, actions, temperature: float):
@@ -135,4 +140,10 @@ def backpropagate(search_path, value, to_play,
 
     value = node.reward + discount * value
 
-
+# Find the subtree root node of the selected action
+def find_subtree_root(root, action):
+  for a, c in root.children.items():
+    if a.index == action.index:
+      return c
+  print('Illegal Action, cannot find the subtree!')
+  return None
