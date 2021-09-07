@@ -74,9 +74,10 @@ class Game():
     return self.environment.legal_actions()
 
   def apply(self, action):
-    reward = self.environment.step(action)
+    obs, reward, done = self.environment.step(action)
     self.rewards.append(reward)
     self.history.append(action)
+    return done
 
   def store_search_statistics(self, root):
     sum_visits = sum(child.visit_count for child in root.children.values())
@@ -91,8 +92,7 @@ class Game():
     board = self.environment.get_observation()
     return torch.tensor(board).float().unsqueeze(0)
 
-  def make_target(self, state_index: int, num_unroll_steps: int, td_steps: int,
-                  to_play: Player):
+  def make_target(self, state_index: int, num_unroll_steps: int, td_steps: int, to_play):
     # The value target is the discounted root value of the search tree N steps
     # into the future, plus the discounted sum of all rewards until then.
     targets = []
@@ -149,7 +149,8 @@ class TicTacToe:
 
     reward = 1 if self.terminal() else 0
 
-    self.player *= -1
+    if not done:
+      self.player *= -1
 
     return self.get_observation(), reward, done
 
