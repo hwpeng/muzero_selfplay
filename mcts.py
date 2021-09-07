@@ -26,8 +26,7 @@ class Node():
       return 0
     return self.value_sum / self.visit_count
 
-  # At the start of each search, we add dirichlet noise to the prior of the root
-  # to encourage the search to explore new actions.
+  # At the start of each search, we add dirichlet noise to the prior of the root to encourage the search to explore new actions.
   def add_exploration_noise(self, config):
     actions = list(self.children.keys())
     noise = numpy.random.dirichlet([config.root_dirichlet_alpha] * len(actions))
@@ -35,8 +34,7 @@ class Node():
     for a, n in zip(actions, noise):
       self.children[a].prior = self.children[a].prior * (1 - frac) + n * frac
   
-  # We expand a node using the value, reward and policy prediction obtained from
-  # the neural network.
+  # We expand a node using the value, reward and policy prediction obtained from the neural network.
   def expand_node(self, to_play, actions, network_output):
     self.to_play = to_play
     self.hidden_state = network_output.hidden_state
@@ -60,11 +58,9 @@ def run_mcts(config, root, action_history, network):
       history.add_action(action)
       search_path.append(node)
 
-    # Inside the search tree we use the dynamics function to obtain the next
-    # hidden state given an action and the previous hidden state.
+    # Inside the search tree we use the dynamics function to obtain the next hidden state given an action and the previous hidden state.
     parent = search_path[-2]
-    (value, reward, p_logits, hidden_state) = network.recurrent_inference(parent.hidden_state,
-                                                 torch.tensor([[history.last_action().index]]))
+    (value, reward, p_logits, hidden_state) = network.recurrent_inference(parent.hidden_state, torch.tensor([[history.last_action().index]]))
 
     policy_logits = {}
     for i in range(config.action_space_size):
@@ -129,9 +125,7 @@ def ucb_score(config, parent: Node, child: Node,
   return prior_score + value_score
 
 
-
-# At the end of a simulation, we propagate the evaluation all the way up the
-# tree to the root.
+# At the end of a simulation, we propagate the evaluation all the way up the tree to the root.
 def backpropagate(search_path, value, to_play,
                   discount, min_max_stats):
   for node in reversed(search_path):

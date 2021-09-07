@@ -1,21 +1,21 @@
 import torch
 import util
 import models
+import pickle
 from game import Game, Action
 from mcts import Node, run_mcts, select_action
 from network import NetworkOutput
 from config import MuZeroConfig_TicTacToe
 
 
-def play_game(config, network):
+def play_game(config, network, dump_game):
   game = config.new_game()
+  steps = []
   while not game.terminal() and len(game.history) < config.max_moves:
     # At the root of the search tree we use the representation function to
     # obtain a hidden state given the current observation.
     root = Node(0)
     current_observation = game.make_image(-1)
-
-    #  print(game.environment.board)
 
     (value, reward, p_logits, hidden_state) = network.initial_inference(current_observation)
 
@@ -38,26 +38,33 @@ def play_game(config, network):
     action = select_action(config, len(game.history), root, network)
     game.apply(action.index)
     game.store_search_statistics(root)
+
+    steps.append([root, action])
+  
+  if dump_game is not None:
+    with open(dump_game, 'wb') as outp:
+      pickle.dump(steps, outp, pickle.HIGHEST_PROTOCOL)
+
   return game
 
 
-def run_selfplay(config, nn_storage, replay_buffer, selfplay_len):
+def run_selfplay(config, nn_storage, replay_buffer, selfplay_len, dump_game=None):
   nn = models.MuZeroNetwork(config)
   nn.eval()
   for i in range(selfplay_len):
     #  print('Game', i)
     nn.set_weights(nn_storage.latest_network())
-    game = play_game(config, nn)
+    game = play_game(config, nn, dump_game)
     replay_buffer.save_game(game)
 
 if __name__ == "__main__":
   #  config = util.make_tictactoe_config()
-  config = MuZeroConfig_TicTacToe('fullyconnected')
+  config = MuZeroConfig_TicTacToe('resnet')
   nn_storage = util.SharedStorage()
   replay_buffer = util.ReplayBuffer(config)
 
   # Put one NN in the storage
-  nn_storage.networks[0] = torch.load('nn_model/tictactoe/fc.checkpoint')
+  nn_storage.networks[0] = torch.load('nn_model/tictactoe/resnet.checkpoint')
 
 
-  run_selfplay(config, nn_storage, replay_buffer, 100)
+  run_selfplay(config, nn_storage, replay_buffer, 1, 'test_game.pkl')
