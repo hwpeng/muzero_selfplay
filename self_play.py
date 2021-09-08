@@ -5,7 +5,7 @@ import pickle
 from game import Game, Action
 from mcts import Node, run_mcts, select_action, find_subtree_root
 from network import NetworkOutput
-from config import MuZeroConfig_TicTacToe
+from config import MuZeroConfig_TicTacToe, MuZeroConfig_connect4
 
 
 def play_game(config, network, dump_game=False, reuse_subtree=False, verbose=False):
@@ -66,11 +66,12 @@ def run_selfplay(config, nn_storage, replay_buffer, selfplay_len, dump_game=Fals
     replay_buffer.save_game(game)
 
 if __name__ == "__main__":
-  config = MuZeroConfig_TicTacToe('resnet')
+  #  config = MuZeroConfig_TicTacToe('resnet')
+  config = MuZeroConfig_connect4('resnet')
   nn_storage = util.SharedStorage()
   replay_buffer = util.ReplayBuffer(config)
 
   # Put one NN in the storage
-  nn_storage.networks[0] = torch.load('nn_model/tictactoe/resnet.checkpoint')
+  nn_storage.networks[0] = torch.load('nn_model/connect4/resnet.checkpoint')
 
-  run_selfplay(config, nn_storage, replay_buffer, 100)
+  run_selfplay(config, nn_storage, replay_buffer, 1, dump_game='connect4.pkl',verbose=True)

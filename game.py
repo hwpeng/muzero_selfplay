@@ -57,6 +57,8 @@ class Game():
   def __init__(self, game_name, action_space_size, discount):
     if game_name == 'tictactoe':
       self.environment = TicTacToe()
+    elif game_name == 'connect4':
+      self.environment = Connect4()
     else:
       self.environment = Environment(game_name)  # Game specific environment.
     self.history = []
@@ -192,4 +194,91 @@ class TicTacToe:
       return True
 
     return False
+
+class Connect4:
+    def __init__(self):
+        self.board = numpy.zeros((6, 7), dtype="int32")
+        self.player = 1
+
+    def to_play(self):
+        return 0 if self.player == 1 else 1
+
+    def reset(self):
+        self.board = numpy.zeros((6, 7), dtype="int32")
+        self.player = 1
+        return self.get_observation()
+
+    def step(self, action):
+        for i in range(6):
+            if self.board[i][action] == 0:
+                self.board[i][action] = self.player
+                break
+
+        done = self.terminal() or len(self.legal_actions()) == 0
+
+        reward = 1 if self.terminal() else 0
+
+        self.player *= -1
+
+        return self.get_observation(), reward, done
+
+    def get_observation(self):
+        board_player1 = numpy.where(self.board == 1, 1.0, 0.0)
+        board_player2 = numpy.where(self.board == -1, 1.0, 0.0)
+        board_to_play = numpy.full((6, 7), self.player, dtype="int32")
+        return numpy.array([board_player1, board_player2, board_to_play])
+
+    def legal_actions(self):
+        legal = []
+        for i in range(7):
+            if self.board[5][i] == 0:
+                legal.append(Action(i))
+        return legal
+
+    def terminal(self):
+        # Horizontal check
+        for i in range(4):
+            for j in range(6):
+                if (
+                    self.board[j][i] == self.player
+                    and self.board[j][i + 1] == self.player
+                    and self.board[j][i + 2] == self.player
+                    and self.board[j][i + 3] == self.player
+                ):
+                    return True
+
+        # Vertical check
+        for i in range(7):
+            for j in range(3):
+                if (
+                    self.board[j][i] == self.player
+                    and self.board[j + 1][i] == self.player
+                    and self.board[j + 2][i] == self.player
+                    and self.board[j + 3][i] == self.player
+                ):
+                    return True
+
+        # Positive diagonal check
+        for i in range(4):
+            for j in range(3):
+                if (
+                    self.board[j][i] == self.player
+                    and self.board[j + 1][i + 1] == self.player
+                    and self.board[j + 2][i + 2] == self.player
+                    and self.board[j + 3][i + 3] == self.player
+                ):
+                    return True
+
+        # Negative diagonal check
+        for i in range(4):
+            for j in range(3, 6):
+                if (
+                    self.board[j][i] == self.player
+                    and self.board[j - 1][i + 1] == self.player
+                    and self.board[j - 2][i + 2] == self.player
+                    and self.board[j - 3][i + 3] == self.player
+                ):
+                    return True
+
+        return False
 
